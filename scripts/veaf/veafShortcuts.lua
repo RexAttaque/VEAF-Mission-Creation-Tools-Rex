@@ -193,6 +193,7 @@ end
 -- execute an alias command
 function veafShortcuts.ExecuteAlias(aliasName, remainingCommand, position, coalition)
     veafShortcuts.logDebug(string.format("veafShortcuts.ExecuteAlias([%s],[%s],[%d])",aliasName or "",remainingCommand or "",coalition or 99))
+    local doNotBypassSecurity = true
     local alias = veafShortcuts.GetAlias(aliasName)
     if alias then 
         veafShortcuts.logTrace(string.format("found VeafAlias[%s]",alias:getName() or ""))
@@ -202,14 +203,14 @@ function veafShortcuts.ExecuteAlias(aliasName, remainingCommand, position, coali
         if veafShortcuts.executeCommand(position, command, coalition) then
             return true
         -- check for SPAWN module commands
-        elseif veafSpawn.executeCommand(position, command, coalitionForSpawn, doNotBypassSecurity or true, spawnedGroups) then
+        elseif veafSpawn.executeCommand(position, command, nil, doNotBypassSecurity, nil) then
             return true
         -- check for NAMED POINT module commands
-        elseif veafNamedPoints.executeCommand(position, {text=command, coalition=-1}, doNotBypassSecurity or true) then
+        elseif veafNamedPoints.executeCommand(position, {text=command, coalition=-1}, doNotBypassSecurity) then
             return true
-        elseif veafCasMission.executeCommand(position, command, coalition, doNotBypassSecurity or true) then
+        elseif veafCasMission.executeCommand(position, command, coalition, doNotBypassSecurity) then
             return true
-        elseif veafSecurity.executeCommand(position, command, doNotBypassSecurity or true) then
+        elseif veafSecurity.executeCommand(position, command, doNotBypassSecurity) then
             return true
         else
             return false

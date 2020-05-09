@@ -287,7 +287,7 @@ function veafTransportMission.doRadioTransmission(groupName)
 end
 
 function veafTransportMission.generateFriendlyGroup(groupPosition)
-    veafSpawn.doSpawnGroup(groupPosition, "US infgroup", "USA", 0, 0, 0, 10, veafTransportMission.BlueGroupName, true)
+    veafSpawn.doSpawnGroup(groupPosition, "US infgroup", "USA", 0, 0, 10, veafTransportMission.BlueGroupName, true)
 
     if veafTransportMission.DoRadioTransmission then
         veafTransportMission.doRadioTransmission(veafTransportMission.BlueGroupName)

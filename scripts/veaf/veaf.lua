@@ -33,7 +33,7 @@ veaf.Id = "VEAF - "
 veaf.MainId = "MAIN - "
 
 --- Version.
-veaf.Version = "1.3.0"
+veaf.Version = "1.4.0"
 
 -- trace level, specific to this module
 veaf.MainTrace = true
@@ -47,14 +47,10 @@ veaf.Debug = veaf.Development
 --- Enable logTrace ==> give even more output to DCS log file.
 veaf.Trace = veaf.Development
 
-veaf.SecondsBetweenFlagMonitorChecks = 5
-
 veaf.DEFAULT_GROUND_SPEED_KPH = 30
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Do not change anything below unless you know what you are doing!
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-veaf.monitoredFlags = {}
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Utility methods
@@ -1075,53 +1071,6 @@ function veaf.endMissionAt(endTimeHour, endTimeMinute, checkIntervalInSeconds, c
     local endTimeInSeconds = endTimeHour * 3600 + endTimeMinute * 60
     veaf.mainLogTrace(string.format("endTimeInSeconds=%d", endTimeInSeconds))
     veaf._checkForEndMission(endTimeInSeconds, checkIntervalInSeconds, checkMessage, delay1, message1, delay2, message2, delay3, message3)    
-end
-
-function veaf.monitorWithSlMod(command, script, flag, coalition, requireAdmin)
-    mist.scheduleFunction(veaf._monitorWithSlMod, {command, script, flag, coalition, requireAdmin}, timer.getTime()+5)    
-end
-
-function veaf._monitorWithSlMod(command, script, flag, coalition, requireAdmin)
-    if slmod then
-        veaf.logDebug(string.format("setting SLMOD configuration for command=[%s], script=[%s], flag=[%d], requireAdmin=[%s]",tostring(command), tostring(script), flag, tostring(requireAdmin)))
-        slmod.chat_cmd(command, flag, -1, coalition or "all", requireAdmin or false)
-        veaf.startMonitoringFlag(flag, script)
-    else
-        veaf.logInfo("SLMOD not found")
-    end
-end
-
-function veaf.startMonitoringFlag(flag, scriptToExecute)
-    -- reset the flag
-    trigger.action.setUserFlag(flag, false)
-    veaf.monitoredFlags[flag] = scriptToExecute
-    veaf._monitorFlags()
-end
-
-function veaf._monitorFlags()
-    veaf.mainLogDebug("veaf._monitorFlags()")
-    for flag, scriptToExecute in pairs(veaf.monitoredFlags) do
-        veaf.mainLogTrace(string.format("veaf._monitorFlags() - checking flag %s", flag))
-        local flagValue = trigger.misc.getUserFlag(flag)
-        veaf.mainLogTrace(string.format("veaf._monitorFlags() - flagValue = [%d]", flagValue))
-        if flagValue > 0 then
-            -- call the script
-            veaf.mainLogTrace(string.format("veaf._monitorFlags() - flag %s was TRUE", flag))
-            veaf.mainLogTrace(string.format("veaf._monitorFlags() - calling lua code [%s]", scriptToExecute))
-            local result, err = mist.utils.dostring(scriptToExecute)
-            if result then
-                veaf.mainLogDebug(string.format("veaf._monitorFlags() - lua code was successfully called for flag [%s]", flag))
-            else
-                veaf.mainLogError(string.format("veaf._monitorFlags() - error [%s] calling lua code for flag [%s]", err, flag))
-            end
-            -- reset the flag
-            trigger.action.setUserFlag(flag, false)
-            veaf.mainLogDebug(string.format("veaf._monitorFlags() - flag [%s] was reset", flag))
-        else
-            veaf.mainLogTrace(string.format("veaf._monitorFlags() - flag %s was FALSE or not set", flag))
-        end
-    end
-    mist.scheduleFunction(veaf._monitorFlags, nil, timer.getTime()+veaf.SecondsBetweenFlagMonitorChecks)    
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------

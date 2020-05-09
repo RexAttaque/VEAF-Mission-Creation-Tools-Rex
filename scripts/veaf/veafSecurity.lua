@@ -499,12 +499,15 @@ function veafSecurity.logout(nocheck)
 end
 
 --- authenticate all radios for a few seconds
-function veafSecurity.authenticate()
+function veafSecurity.authenticate(silent, timeout)
+  timeout = timeout or (veafSecurity.authDuration * 60)
   if not veafSecurity.authenticated then
-    trigger.action.outText("The system is authenticated for "..veafSecurity.authDuration.." minutes", 10)
+    if not silent then
+      trigger.action.outText("The system is authenticated for "..veafSecurity.authDuration.." minutes", 10)
+    end
     veafSecurity.authenticated = true
     veafRadio.refreshRadioMenu()
-    mist.scheduleFunction(veafSecurity.logout,{true},timer.getTime()+veafSecurity.authDuration*60)
+    mist.scheduleFunction(veafSecurity.logout,{true},timer.getTime()+timeout)
   end
 end
 
