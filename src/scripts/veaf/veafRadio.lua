@@ -290,10 +290,14 @@ function veafRadio.refreshRadioSubmenu(parentRadioMenu, radioMenu, radioMeasures
 
   -- create the radio menu in DCS
   veafRadio.addSizeForAll(string.len(radioMenu.title))
+  local dcsParentRadionMenu = nil
   if parentRadioMenu then
-    radioMenu.dcsRadioMenu = missionCommands.addSubMenu(radioMenu.title, parentRadioMenu.dcsRadioMenu)
+    dcsParentRadionMenu = parentRadioMenu.dcsRadioMenu
+  end
+  if radioMenu.groupId ~= nil then
+    radioMenu.dcsRadioMenu = missionCommands.addSubMenuForGroup(radioMenu.groupId, radioMenu.title, dcsParentRadionMenu)
   else
-    radioMenu.dcsRadioMenu = missionCommands.addSubMenu(radioMenu.title)
+    radioMenu.dcsRadioMenu = missionCommands.addSubMenu(radioMenu.title, dcsParentRadionMenu)
   end
   measures_addMenu()
   
@@ -403,11 +407,16 @@ function veafRadio.addMenu(title)
   return veafRadio.addSubMenu(title, nil)
 end
 
-function veafRadio.addSubMenu(title, radioMenu)
+function veafRadio.addSubMenuForGroup(groupId, title, radioMenu)
+  return veafRadio.addSubMenu(title, radioMenu, groupId)
+end
+
+function veafRadio.addSubMenu(title, radioMenu, groupId)
    
     local subMenu = {}
     subMenu.title = title
     subMenu.dcsRadioMenu = nil
+    subMenu.groupId = groupId
     subMenu.subMenus = {}
     subMenu.commands = {}
     
