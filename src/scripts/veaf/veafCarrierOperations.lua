@@ -48,10 +48,10 @@ veafCarrierOperations = {}
 veafCarrierOperations.Id = "CARRIER - "
 
 --- Version.
-veafCarrierOperations.Version = "1.4.5"
+veafCarrierOperations.Version = "1.5.0"
 
 -- trace level, specific to this module
-veafCarrierOperations.Trace = false
+veafCarrierOperations.Trace = true
 
 --- All the carrier groups must comply with this name
 veafCarrierOperations.CarrierGroupNamePattern = "^CSG-.*$"
@@ -60,16 +60,16 @@ veafCarrierOperations.RadioMenuName = "CARRIER OPS"
 
 veafCarrierOperations.AllCarriers = 
 {
-    ["LHA_Tarawa"] = { runwayAngleWithBRC = 0, desiredWindSpeedOnDeck = 20},
-    ["Stennis"] = { runwayAngleWithBRC = 9.05, desiredWindSpeedOnDeck = 25},
-    ["CVN_71"] = { runwayAngleWithBRC = 9.05, desiredWindSpeedOnDeck = 25},
-    ["KUZNECOW"] ={ runwayAngleWithBRC = 0, desiredWindSpeedOnDeck = 25}
+    ["LHA_Tarawa"] = { runwayAngleWithBRC = 0   , desiredWindSpeedOnDeck = 20, iclsChannel=11, tacanChannel=11, tacanFrequency=972000000, tacanBand="X", tacanCode="TAA"},
+    ["Stennis"] =    { runwayAngleWithBRC = 9.05, desiredWindSpeedOnDeck = 25, iclsChannel=10, tacanChannel=10, tacanFrequency=971000000, tacanBand="X", tacanCode="STS"},
+    ["CVN_71"] =     { runwayAngleWithBRC = 9.05, desiredWindSpeedOnDeck = 25, iclsChannel=12, tacanChannel=12, tacanFrequency=973000000, tacanBand="X", tacanCode="RHR"},
+    ["KUZNECOW"] =   { runwayAngleWithBRC = 0   , desiredWindSpeedOnDeck = 25}
 }
 
 veafCarrierOperations.ALT_FOR_MEASURING_WIND = 30 -- wind is measured at 30 meters, 10 meters above deck
 veafCarrierOperations.ALIGNMENT_MANOEUVER_SPEED = 8 -- carrier speed when not yet aligned to the wind (in m/s)
 veafCarrierOperations.MAX_OPERATIONS_DURATION = 45 -- operations are stopped after
-veafCarrierOperations.SCHEDULER_INTERVAL = 2 -- scheduler runs every 2 minutes
+veafCarrierOperations.SCHEDULER_INTERVAL = 0.08 -- scheduler runs every 2 minutes
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Do not change anything below unless you know what you are doing!
@@ -143,7 +143,7 @@ function veafCarrierOperations.startCarrierOperations(parameters)
                 carrier.runwayAngleWithBRC = data.runwayAngleWithBRC
                 carrier.desiredWindSpeedOnDeck = data.desiredWindSpeedOnDeck
                 carrier.initialPosition = unit:getPosition().p
-                veafCarrierOperations.logTrace("initialPosition="..veaf.vecToString(carrier.initialPosition))
+                veafCarrierOperations.logTrace("carrier="..veaf.p(carrier))
                 break
             end
         end
@@ -167,6 +167,37 @@ function veafCarrierOperations.startCarrierOperations(parameters)
     veafCarrierOperations.logTrace("change the menu")
     veafCarrierOperations.rebuildRadioMenu()
 
+end
+
+function veafCarrierOperations.activateTacanAndICLS(unit, tacanBand, tacanChannel, tacanFrequency, tacanCode, iclsChannel)
+    local activateTacanTask = 
+    {
+        ["id"] = "ActivateBeacon",
+        ["params"] = {
+            ["AA"] = false,
+            ["bearing"] = true,
+            ["callsign"] = tacanCode,
+            ["channel"] = tacanChannel,
+            ["frequency"] = tacanFrequency,
+            ["modeChannel"] = tacanBand,
+            ["system"] = 3,
+            ["type"] = 4,
+            ["unitId"] = unit:getID(),
+        }
+    }
+
+    local activateIclsTask =
+    {
+        ["id"] = "ActivateICLS",
+        ["params"] = {
+            ["channel"] = iclsChannel,
+            ["type"] = 131584,
+            ["unitId"] = unit:getID(),
+        }
+    }
+
+    unit:getGroup():getController():pushTask(activateTacanTask)
+    unit:getGroup():getController():pushTask(activateIclsTask)
 end
 
 --- Continue carrier operations ; make the carrier move according to the wind. Called by startCarrierOperations and by the scheduler.
@@ -790,6 +821,12 @@ function veafCarrierOperations.initializeCarrierGroups()
                         if tankerUnit then
                             tankerUnit:destroy()
                         end
+                        carrier.iclsChannel = data.iclsChannel
+                        carrier.tacanChannel = data.tacanChannel
+                        carrier.tacanBand = data.tacanBand
+                        carrier.tacanCode = data.tacanCode
+                        carrier.tacanFrequency = data.tacanFrequency
+                        veafCarrierOperations.logTrace("carrier="..veaf.p(carrier))
                         break
                     end
                 end
@@ -835,6 +872,19 @@ function veafCarrierOperations.doOperations()
             end
         else
             veafCarrierOperations.logDebug(name .. " is not conducting operations")
+        end
+        -- (re)activate tacan and ICLS
+        if false then --carrier.tacanChannel or carrier.iclsChannel then
+            local carrierUnit = Unit.getByName(carrier.carrierUnitName)
+            if carrierUnit then
+                veafCarrierOperations.logDebug("(re)activate tacan and ICLS for "..name)
+                veafCarrierOperations.logTrace("carrier.tacanBand="..veaf.p(carrier.tacanBand))
+                veafCarrierOperations.logTrace("carrier.tacanChannel="..veaf.p(carrier.tacanChannel))
+                veafCarrierOperations.logTrace("carrier.tacanFrequency="..veaf.p(carrier.tacanFrequency))
+                veafCarrierOperations.logTrace("carrier.tacanCode="..veaf.p(carrier.tacanCode))
+                veafCarrierOperations.logTrace("carrier.iclsChannel="..veaf.p(carrier.iclsChannel))
+                veafCarrierOperations.activateTacanAndICLS(carrierUnit, carrier.tacanBand, carrier.tacanChannel, carrier.tacanFrequency, carrier.tacanCode, carrier.iclsChannel)
+            end
         end
     end
 end
